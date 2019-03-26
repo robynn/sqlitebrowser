@@ -12,6 +12,8 @@
 #include <QUrl>
 #include <QtConcurrent/QtConcurrentRun>
 #include <QProgressDialog>
+#include <QRegExp>
+#include <QRegularExpression>
 
 #include "RowLoader.h"
 
@@ -221,16 +223,16 @@ int SqliteTableModel::filterCount() const
 static QString toSuperScript(int number)
 {
     QString superScript = QString::number(number);
-    superScript.replace('0', u'⁰');
-    superScript.replace('1', u'¹');
-    superScript.replace('2', u'²');
-    superScript.replace('3', u'³');
-    superScript.replace('4', u'⁴');
-    superScript.replace('5', u'⁵');
-    superScript.replace('6', u'⁶');
-    superScript.replace('7', u'⁷');
-    superScript.replace('8', u'⁸');
-    superScript.replace('9', u'⁹');
+    superScript.replace(QRegularExpression("0$"), "⁰");
+    superScript.replace(QRegularExpression("1$"), "¹");
+    superScript.replace(QRegularExpression("2$"), "²");
+    superScript.replace(QRegularExpression("3$"), "³");
+    superScript.replace(QRegularExpression("4$"), "⁴");
+    superScript.replace(QRegularExpression("5$"), "⁵");
+    superScript.replace(QRegularExpression("6$"), "⁶");
+    superScript.replace(QRegularExpression("7$"), "⁷");
+    superScript.replace(QRegularExpression("8$"), "⁸");
+    superScript.replace(QRegularExpression("9$"), "⁹");
     return superScript;
 }
 
