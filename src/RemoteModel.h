@@ -2,9 +2,9 @@
 #define REMOTEMODEL_H
 
 #include <QAbstractItemModel>
-#include <QStringList>
+#include <QUrl>
 
-class RemoteDatabase;
+#include <json.hpp>
 
 // List of fields stored in the JSON data
 enum RemoteModelColumns
@@ -15,6 +15,12 @@ enum RemoteModelColumns
     RemoteModelColumnCommitId,
     RemoteModelColumnSize,
     RemoteModelColumnLastModified,
+    RemoteModelColumnDefaultBranch,
+    RemoteModelColumnLicence,
+    RemoteModelColumnOneLineDescription,
+    RemoteModelColumnPublic,
+    RemoteModelColumnRepoModified,
+    RemoteModelColumnSha256,
 
     RemoteModelColumnCount
 };
@@ -39,14 +45,14 @@ public:
 
     // This function assumes the JSON value it's getting passed is an array ("[{...}, {...}, {...}, ...]"). It returns a list of model items, one
     // per array entry and each with the specified parent set.
-    static QList<RemoteModelItem*> loadArray(const QJsonValue& value, RemoteModelItem* parent = nullptr);
+    static std::vector<RemoteModelItem*> loadArray(const nlohmann::json& array, RemoteModelItem* parent = nullptr);
 
 private:
     // These are just the fields from the json objects returned by the dbhub.io server
     QVariant m_values[RemoteModelColumnCount];
 
     // Child items and parent item
-    QList<RemoteModelItem*> m_children;
+    std::vector<RemoteModelItem*> m_children;
     RemoteModelItem* m_parent;
 
     // Indicates whether we already tried fetching a directory listing for this item. This serves two purposes:
@@ -60,10 +66,11 @@ class RemoteModel : public QAbstractItemModel
     Q_OBJECT
 
 public:
-    explicit RemoteModel(QObject* parent, RemoteDatabase& remote);
+    explicit RemoteModel(QObject* parent);
     ~RemoteModel() override;
 
     void setNewRootDir(const QString& url, const QString& cert);
+    void refresh();
 
     QModelIndex index(int row, int column,const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex parent(const QModelIndex& index) const override;
@@ -91,23 +98,19 @@ signals:
     void directoryListingParsed(QModelIndex parent);
 
 private slots:
-    // This is called whenever a network reply containing a directory listing arrives. json contains the reply data, userdata
-    // contains some custom data passed to the request. In this case we expect this to be the model index of the parent tree item.
-    void parseDirectoryListing(const QString& json, const QVariant& userdata);
+    // This is called whenever a network reply containing a directory listing arrives
+    void parseDirectoryListing(const QString& text, QModelIndex parent);
 
 private:
+    // The header list is a list of column titles
+    const std::vector<QString> headerList;
+
     // Pointer to the root item. This contains all the actual item data.
     RemoteModelItem* rootItem;
 
-    // Thr header list is a list of column titles. It's a static list that's getting filled in the constructor.
-    QStringList headerList;
-
-    // Reference to the remote database object which is stored somewhere in the main window.
-    RemoteDatabase& remoteDatabase;
-
     // This stores the currently used network identity so it can be used for further requests, e.g. for
     // lazy population.
-    QString currentRootDirectory;
+    QUrl currentRootDirectory;
     QString currentClientCert;
     QString currentUserName;
 };

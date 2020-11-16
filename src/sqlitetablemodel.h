@@ -2,18 +2,21 @@
 #define SQLITETABLEMODEL_H
 
 #include <QAbstractTableModel>
-#include <QStringList>
-#include <QVector>
-#include <QMutex>
 #include <QColor>
+#include <QFont>
+
+#include <map>
 #include <memory>
+#include <mutex>
+#include <vector>
 
 #include "RowCache.h"
-#include "CondFormat.h"
 #include "sql/Query.h"
+#include "sql/sqlitetypes.h"
 
 struct sqlite3;
 class DBBrowserDB;
+class CondFormat;
 
 class SqliteTableModel : public QAbstractTableModel
 {
@@ -24,7 +27,7 @@ class SqliteTableModel : public QAbstractTableModel
 #endif
 
 public:
-    explicit SqliteTableModel(DBBrowserDB& db, QObject *parent = nullptr, size_t chunkSize = 50000, const QString& encoding = QString());
+    explicit SqliteTableModel(DBBrowserDB& db, QObject *parent = nullptr, const QString& encoding = QString(), bool force_wait = false);
     ~SqliteTableModel() override;
 
     /// reset to state after construction
@@ -34,7 +37,7 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    int filterCount() const;
+    size_t filterCount() const;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
@@ -79,14 +82,12 @@ public:
     /// configure for browsing results of specified query
     void setQuery(const QString& sQuery, const QString& sCountQuery = QString(), bool dontClearHeaders = false);
 
-    QString query() const { return m_sQuery; }
-    QString customQuery(bool withRowid) const { return QString::fromStdString(m_query.buildQuery(withRowid)); }
+    std::string query() const { return m_sQuery.toStdString(); }
+    std::string customQuery(bool withRowid) const { return m_query.buildQuery(withRowid); }
 
     /// configure for browsing specified table
     void setQuery(const sqlb::Query& query);
 
-    void setChunkSize(size_t chunksize);
-    size_t chunkSize() { return m_chunkSize; };
     void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
     void sort(const std::vector<sqlb::SortedColumn>& columns);
     sqlb::ObjectIdentifier currentTableName() const { return m_query.table(); }
@@ -99,27 +100,51 @@ public:
     QString encoding() const { return m_encoding; }
 
     // The pseudo-primary key is exclusively for editing views
-    void setPseudoPk(QString pseudoPk);
+    void setPseudoPk(std::vector<std::string> pseudoPk);
     bool hasPseudoPk() const;
-    QString pseudoPk() const { return QString::fromStdString(m_query.rowIdColumn()); }
+    std::vector<std::string> pseudoPk() const { return m_query.rowIdColumns(); }
 
-    sqlb::ForeignKeyClause getForeignKeyClause(int column) const;
+    sqlb::ForeignKeyClause getForeignKeyClause(size_t column) const;
 
-    // This returns true if the model is set up for editing. The model is able to operate in more or less two different modes, table browsing
-    // and query browsing. We only support editing data for the table browsing mode and not for the query mode. This function returns true if
-    // the model is currently editable, i.e. it's running in table mode and it isn't a view.
-    bool isEditable() const;
+    // This returns true if the model and, if set, the index can be edited. Not specifying the index parameter asks whether the model can
+    // be edited in general (i.e. inserting and deleting rows as well as updating some cells). Specifying the index parameter asks whether
+    // this specific index can be edited.
+    // The model is able to operate in more or less two different modes, table browsing and query browsing. We only support editing data
+    // in the table browsing mode but not for the query mode. This function returns true if the model is currently editable, i.e. it's
+    // running in the table mode and isn't browsing a view, unless this view is set up for editing by specifying a pseudo PK.
+    // When the index parameter is set, the same checks are performed but additionally the function checks whether this specific index
+    // can be edited. This makes a difference for generated columns which are in (editable) tables but cannot be modified anyway.
+    bool isEditable(const QModelIndex& index = QModelIndex()) const;
 
     // Helper function for removing all comments from a SQL query
     static void removeCommentsFromQuery(QString& query);
 
-    void addCondFormat(int column, const CondFormat& condFormat);
-    void setCondFormats(int column, const QVector<CondFormat>& condFormats);
+    // Conditional formats are of two kinds: regular conditional formats (including condition-free formats applying to any value in the
+    // column) and formats applying to a particular row-id and which have always precedence over the first kind and whose filter apply
+    // to the row-id column.
+    void addCondFormat(const bool isRowIdFormat, size_t column, const CondFormat& condFormat);
+    void setCondFormats(const bool isRowIdFormat, size_t column, const std::vector<CondFormat>& condFormats);
 
-    DBBrowserDB& db() { return m_db; };
+    // Search for the specified expression in the given cells. This intended as a replacement for QAbstractItemModel::match() even though
+    // it does not override it, which - because of the different parameters - is not possible.
+    // start contains the index to start with, column_list contains the ordered list of the columns to look in, value is the value to search for,
+    // flags allows to modify  the search process (Qt::MatchContains, Qt::MatchRegExp, Qt::MatchCaseSensitive, and Qt::MatchWrap are understood),
+    // reverse can be set to true to progress through the cells in backwards direction, and dont_skip_to_next_field can be set to true if the current
+    // cell can be matched as well.
+    QModelIndex nextMatch(const QModelIndex& start,
+                          const std::vector<int>& column_list,
+                          const QString& value,
+                          Qt::MatchFlags flags = Qt::MatchFlags(Qt::MatchContains),
+                          bool reverse = false,
+                          bool dont_skip_to_next_field = false) const;
+
+    DBBrowserDB& db() { return m_db; }
+
+    void reloadSettings();
 
 public slots:
-    void updateFilter(int column, const QString& value);
+    void updateFilter(size_t column, const QString& value);
+    void updateGlobalFilter(const std::vector<QString>& values);
 
 signals:
     void finishedFetch(int fetched_row_begin, int fetched_row_end);
@@ -143,14 +168,15 @@ private:
     void buildQuery();
 
     /// \param pDb connection to query; if null, obtains it from 'm_db'.
-    QStringList getColumns(std::shared_ptr<sqlite3> pDb, const QString& sQuery, QVector<int>& fieldsTypes);
+    std::vector<std::string> getColumns(std::shared_ptr<sqlite3> pDb, const std::string& sQuery, std::vector<int>& fieldsTypes) const;
 
     QByteArray encode(const QByteArray& str) const;
     QByteArray decode(const QByteArray& str) const;
 
-    // Return matching conditional format color or invalid color, otherwise.
-    // Only Qt::ForegroundRole and Qt::BackgroundRole are expected in role (Qt::ItemDataRole)
-    QColor getMatchingCondFormatColor(int column, const QString& value, int role) const;
+    // Return matching conditional format color/font or invalid value, otherwise.
+    // Only format roles are expected in role (Qt::ItemDataRole)
+    QVariant getMatchingCondFormat(size_t row, size_t column, const QString& value, int role) const;
+    QVariant getMatchingCondFormat(const std::map<size_t, std::vector<CondFormat>>& mCondFormats, size_t column, const QString& value, int role) const;
 
     DBBrowserDB& m_db;
 
@@ -167,23 +193,52 @@ private:
     RowCount m_rowCountAvailable;
     unsigned int m_currentRowCount;
 
-    QStringList m_headers;
+    std::vector<std::string> m_headers;
 
     /// reading something in background right now? (either counting
     /// rows or actually loading data, doesn't matter)
     bool readingData() const;
 
-    using Row = QVector<QByteArray>;
+    using Row = std::vector<QByteArray>;
     mutable RowCache<Row> m_cache;
 
     Row makeDefaultCacheEntry () const;
 
-    bool nosync_isBinary(const QModelIndex& index) const;
+    bool isBinary(const QByteArray& index) const;
 
     QString m_sQuery;
-    QVector<int> m_vDataTypes;
-    QMap<int, QVector<CondFormat>> m_mCondFormats;
+    std::vector<int> m_vDataTypes;
+    std::map<size_t, std::vector<CondFormat>> m_mCondFormats;
+    std::map<size_t, std::vector<CondFormat>> m_mRowIdFormats;
+
     sqlb::Query m_query;
+    std::shared_ptr<sqlb::Table> m_table_of_query;  // This holds a pointer to the table object which is queried in the m_query object
+
+    QString m_encoding;
+
+    /**
+     * These are used for multi-threaded population of the table
+     */
+    mutable std::mutex m_mutexDataCache;
+
+private:
+    /**
+     * Settings. These are stored here to avoid fetching and converting them every time we need them. Because this class
+     * uses a lot of settings and because some of its functions are called very often, this should speed things up noticeable.
+     * Call reloadSettings() to update these.
+     */
+
+    QString m_nullText;
+    QString m_blobText;
+    QColor m_regFgColour;
+    QColor m_regBgColour;
+    QColor m_nullFgColour;
+    QColor m_nullBgColour;
+    QColor m_binFgColour;
+    QColor m_binBgColour;
+    QFont m_font;
+    int m_symbolLimit;
+    bool m_imagePreviewEnabled;
 
     /**
      * @brief m_chunkSize Size of the next chunk fetch more will try to fetch.
@@ -194,13 +249,6 @@ private:
      * to that row count.
      */
     size_t m_chunkSize;
-
-    QString m_encoding;
-
-    /**
-     * These are used for multi-threaded population of the table
-     */
-    mutable QMutex m_mutexDataCache;
 };
 
 #endif

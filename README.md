@@ -3,7 +3,6 @@
 [![Wiki][wiki-img]][wiki]
 [![Build Status][travis-img]][travis]
 [![Join the chat at https://gitter.im/sqlitebrowser/sqlitebrowser][gitter-img]][gitter]
-[![Join the chat at https://join.slack.com/t/db4s/shared_invite/enQtMzc3MzY5OTU4NDgzLWRlYjk0ZmE5ZDEzYWVmNDQxYTYxNmJjNWVkMjI3ZmVjZTY2NDBjODY3YzNhNTNmZDVlNWI2ZGFjNTk5MjJkYmU][slack-img]][slack]
 [![Download][download-img]][download]
 [![Qt][qt-img]][qt]
 [![Coverity][coverity-img]][coverity]
@@ -47,7 +46,7 @@ https://github.com/sqlitebrowser/sqlitebrowser/wiki.
 
 ## Nightly builds
 
-Download nightly builds for Windows and OSX here:
+Download nightly builds for Windows and macOS here:
 
 * https://nightlies.sqlitebrowser.org/latest
 
@@ -55,27 +54,41 @@ Download nightly builds for Windows and OSX here:
 
 Download Windows releases here:
 
-* https://github.com/sqlitebrowser/sqlitebrowser/releases
+* https://sqlitebrowser.org/dl/#windows
 
 **Note** - If for some reason the standard Windows release does not work
 (e.g. gives an error), try a nightly build.  Nightly builds often fix bugs
 reported after the last release. :D
 
-## MacOS X / macOS
+## macOS
 
-DB Browser for SQLite works well on MacOS X / macOS.
+#### Stable release
 
-* OSX 10.8 (Mountain Lion) - 10.13 (High Sierra) are tested and known to work
+DB Browser for SQLite works well on macOS.
 
-Download OSX releases here:
+* macOS 10.12 (Sierra) - 10.15 (Catalina) are tested and known to work
 
-* https://github.com/sqlitebrowser/sqlitebrowser/releases
+Download macOS releases here:
 
-The latest OSX binary can be installed via [Homebrew Cask](https://caskroom.github.io/ "Homebrew Cask"):
+* https://sqlitebrowser.org/dl/#macos
+
+The latest macOS binary can be installed via [Homebrew Cask](https://caskroom.github.io/ "Homebrew Cask"):
 
 ```
 brew cask install db-browser-for-sqlite
 ```
+
+#### Nightly builds
+
+Nightly builds are available here:
+* https://nightlies.sqlitebrowser.org/latest
+
+and also you can be installed via [Homebrew Cask](https://caskroom.github.io/ "Homebrew Cask"):
+
+    $ brew tap homebrew/cask-versions
+    $ brew cask install db-browser-for-sqlite-nightly
+
+**Note** - You can **NOT** install nightly builds with Homebrew if you already have the stable version installed.
 
 ## Linux
 
@@ -83,7 +96,11 @@ DB Browser for SQLite works well on Linux.
 
 ### Arch Linux
 
-Arch Linux provides a package through pacman.
+Arch Linux provides an [up to date version](https://www.archlinux.org/packages/community/x86_64/sqlitebrowser/)
+
+Install with the following command:
+
+    sudo pacman -S sqlitebrowser
 
 ### Fedora
 
@@ -188,7 +205,7 @@ or this command:
 
 ## Compiling
 
-Instructions for compiling on Windows, OSX, Linux, and FreeBSD are
+Instructions for compiling on Windows, macOS, Linux, and FreeBSD are
 in [BUILDING](BUILDING.md).
 
 ## Twitter
@@ -205,6 +222,8 @@ Follow us on Twitter: https://twitter.com/sqlitebrowser
 
 ## Releases
 
+* [Version 3.12.0 released](https://github.com/sqlitebrowser/sqlitebrowser/releases/tag/v3.12.0) - 2020-06-16
+* [Version 3.11.2 released](https://github.com/sqlitebrowser/sqlitebrowser/releases/tag/v3.11.2) - 2019-04-03
 * [Version 3.11.1 released](https://github.com/sqlitebrowser/sqlitebrowser/releases/tag/v3.11.1) - 2019-02-18
 * [Version 3.11.0 released](https://github.com/sqlitebrowser/sqlitebrowser/releases/tag/v3.11.0) - 2019-02-07
 * [Version 3.10.1 released](https://github.com/sqlitebrowser/sqlitebrowser/releases/tag/v3.10.1) - 2017-09-20

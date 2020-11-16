@@ -2,13 +2,13 @@
 #define PREFERENCESDIALOG_H
 
 #include <QDialog>
-#include <QVariant>
-#include <QHash>
 
 class QTreeWidgetItem;
 class QFrame;
 class QSslCertificate;
 class QAbstractButton;
+
+class ProxyDialog;
 
 namespace Ui {
 class PreferencesDialog;
@@ -34,7 +34,7 @@ public:
 
 private slots:
     void loadSettings();
-    void saveSettings();
+    void saveSettings(bool accept=true);
 
     void chooseLocation();
     void showColourDialog(QTreeWidgetItem* item, int column);
@@ -46,20 +46,25 @@ private slots:
     void chooseRemoteCloneDirectory();
     void updatePreviewFont();
     void adjustColorsToStyle(int style);
+    void configureProxy();
 
     void on_buttonManageFileExtension_clicked();
     void on_buttonBox_clicked(QAbstractButton* button);
 
 private:
-    Ui::PreferencesDialog *ui;
+    Ui::PreferencesDialog* ui;
+
+    ProxyDialog* m_proxyDialog;
 
     QStringList m_dbFileExtensions;
 
     void fillLanguageBox();
-    void loadColorSetting(QFrame *frame, const QString &name);
-    void setColorSetting(QFrame *frame, const QColor &color);
-    void saveColorSetting(QFrame *frame, const QString &name);
+    void loadColorSetting(QFrame *frame, const std::string& name);
+    void setColorSetting(QFrame* frame, const QColor &color);
+    void saveColorSetting(QFrame* frame, const std::string& name);
     void addClientCertToTable(const QString& path, const QSslCertificate& cert);
+    void exportSettings();
+    void importSettings();
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;

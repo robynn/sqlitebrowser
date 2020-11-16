@@ -42,9 +42,6 @@ public slots:
     void setDropQualifiedNames(bool value) { m_dropQualifiedNames = value; }
     void setDropEnquotedNames(bool value) { m_dropEnquotedNames = value; }
 
-signals:
-    void structureUpdated();
-
 private:
     DBBrowserDB& m_db;
     QTreeWidgetItem* rootItem;
@@ -52,8 +49,8 @@ private:
     bool m_dropQualifiedNames;
     bool m_dropEnquotedNames;
 
-    void buildTree(QTreeWidgetItem* parent, const QString& schema);
-    QTreeWidgetItem* addNode(QTreeWidgetItem* parent, const sqlb::ObjectPtr& object, const QString& schema);
+    void buildTree(QTreeWidgetItem* parent, const std::string& schema);
+    QTreeWidgetItem* addNode(QTreeWidgetItem* parent, const sqlb::ObjectPtr& object, const std::string& schema);
     QString getNameForDropping(const QString& domain, const QString& object, const QString& field) const;
 };
 

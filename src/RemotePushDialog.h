@@ -3,7 +3,6 @@
 
 #include <QDialog>
 
-class RemoteDatabase;
 class QRegExpValidator;
 
 namespace Ui {
@@ -15,7 +14,8 @@ class RemotePushDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit RemotePushDialog(QWidget* parent, RemoteDatabase& remote, const QString& host, const QString& clientCert, const QString& name = QString());
+    explicit RemotePushDialog(QWidget* parent, const QString& host, const QString& clientCert,
+                              const QString& name = QString(), const QString& branch = QString(), const QString& user = QString());
     ~RemotePushDialog() override;
 
     QString name() const;
@@ -23,6 +23,7 @@ public:
     QString licence() const;
     bool isPublic() const;
     QString branch() const;
+    QString user() const;
     bool forcePush() const;
 
 private:
@@ -32,21 +33,14 @@ private:
     QString m_host;
     QString m_clientCert;
 
-    // Reference to the remote database object which is stored somewhere in the main window
-    RemoteDatabase& remoteDatabase;
-
     // Validators
     QRegExpValidator* m_nameValidator;
     QRegExpValidator* m_branchValidator;
 
 protected slots:
     void checkInput();
+    void reloadBranchList(const QString& select_branch = QString());
     void accept() override;
-
-    void reloadBranchList();
-
-    void fillInLicences(const QMap<QString, QString>& licences);
-    void fillInBranches(const QStringList& branches, const QString& default_branch);
 };
 
 #endif

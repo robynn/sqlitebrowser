@@ -1,5 +1,4 @@
 #include "TestRegex.h"
-#include "../sqlitedb.h"
 #include "../sqlitetablemodel.h"
 
 #include <QtTest/QTest>
@@ -58,13 +57,13 @@ void TestRegex::sqlQueryComments_data()
             << // cleanQuery
                "SELECT '-- comment inside quotes'";
 
-    /* TODO Fix issue #1270, then activate these
     QTest::newRow("single_quote_comment")
             << // dirtyQuery
                "SELECT 'something--something' -- comment"
             << // cleanQuery
                "SELECT 'something--something'";
 
+    /* This still needs to be fixed in our code before activating the test
     QTest::newRow("double_quote_comment")
             << // dirtyQuery
                "SELECT \"something--something\" -- comment"
@@ -74,12 +73,9 @@ void TestRegex::sqlQueryComments_data()
 
 void TestRegex::sqlQueryComments()
 {
-    DBBrowserDB db;
-    SqliteTableModel model(db);
-
     QFETCH(QString, dirtyQuery);
     QFETCH(QString, clearQuery);
 
-    model.removeCommentsFromQuery(dirtyQuery);
+    SqliteTableModel::removeCommentsFromQuery(dirtyQuery);
     QCOMPARE(dirtyQuery, clearQuery);
 }

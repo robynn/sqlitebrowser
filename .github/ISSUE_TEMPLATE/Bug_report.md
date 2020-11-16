@@ -34,14 +34,14 @@ The info below often helps, please fill it out if you're able to. :)
 
 - [ ] Windows: ( _version:_ ___ )
 - [ ] Linux: ( _distro:_ ___ )
-- [ ] Mac OS: ( _version:_ ___ )
+- [ ] macOS: ( _version:_ ___ )
 - [ ] Other: ___
 
 #### What is your DB4S version?
 
-- [ ] 3.11.1
-- [ ] 3.11.0
-- [ ] 3.10.1
+- [ ] 3.12.1
+- [ ] 3.12.0
+- [ ] 3.11.x
 - [ ] Other: ___
 
 #### Did you also

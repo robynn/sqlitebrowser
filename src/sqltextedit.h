@@ -3,7 +3,6 @@
 
 #include "ExtendedScintilla.h"
 
-class FindReplaceDialog;
 class SqlUiLexer;
 
 /**
@@ -16,9 +15,11 @@ class SqlTextEdit : public ExtendedScintilla
 
 public:
     explicit SqlTextEdit(QWidget *parent = nullptr);
-    ~SqlTextEdit() override;
 
     static SqlUiLexer* sqlLexer;
+
+private:
+    void transferFocus();
 
 public slots:
     void reloadSettings();

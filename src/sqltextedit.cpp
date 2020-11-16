@@ -1,4 +1,4 @@
-#include "sql/sqlitetypes.h"
+#include "sql/ObjectIdentifier.h"
 #include "sqltextedit.h"
 #include "Settings.h"
 #include "SqlUiLexer.h"
@@ -41,12 +41,11 @@ SqlTextEdit::SqlTextEdit(QWidget* parent) :
     QShortcut* shortcutToggleComment = new QShortcut(QKeySequence(tr("Ctrl+/")), this, nullptr, nullptr, Qt::WidgetShortcut);
     connect(shortcutToggleComment, &QShortcut::activated, this, &SqlTextEdit::toggleBlockComment);
 
+    QShortcut* shortcutFocusOut = new QShortcut(QKeySequence(tr("Ctrl+PgDown")), this, nullptr, nullptr, Qt::WidgetShortcut);
+    connect(shortcutFocusOut, &QShortcut::activated, this, &SqlTextEdit::transferFocus);
+
     // Do rest of initialisation
     reloadSettings();
-}
-
-SqlTextEdit::~SqlTextEdit()
-{
 }
 
 void SqlTextEdit::reloadSettings()
@@ -82,7 +81,8 @@ void SqlTextEdit::reloadSettings()
         break;
     case sqlb::GraveAccents:
         sqlLexer->setQuotedIdentifiers(true);
-        // Fall through, treat quoted string as literal string
+        setupSyntaxHighlightingFormat(sqlLexer, "string", QsciLexerSQL::DoubleQuotedString);    // treat quoted string as literal string
+        break;
     case sqlb::SquareBrackets:
         setupSyntaxHighlightingFormat(sqlLexer, "string", QsciLexerSQL::DoubleQuotedString);
         break;
@@ -135,4 +135,10 @@ void SqlTextEdit::toggleBlockComment()
         replaceSelectedText(lineText);
     }
     endUndoAction();
+}
+
+void SqlTextEdit::transferFocus()
+{
+    // We need two jumps to get to the Table Results widget
+    nextInFocusChain()->nextInFocusChain()->setFocus();
 }
